@@ -103,7 +103,21 @@ def test_fs_backend_load_store_loads_from_fallback_dir(tmpdir):
     store = _FilesystemBackend(key_prefixes=['prefix'], runtime_dirs=[run_dir, fb_dir])
     assert store.load_store('key', lambda x: x + 1) == (42, 43)
 
-    assert fallback.load('key') == 42, 'fallback location was changed'
+    assert fallback.load('key') == 42, 'content in fallback location changed'
+
+
+def test_fs_backend_load_store_loads_from_fallback_dir_that_is_symlink(tmpdir):
+    run_dir = tmpdir.mkdir('run_dir')
+    fb_dir = os.path.join(run_dir, 'symlink')
+    os.symlink(run_dir, fb_dir, target_is_directory=True)
+
+    fallback = _FilesystemBackend(key_prefixes=['prefix'], runtime_dirs=[fb_dir])
+    fallback.store('key', 42)
+
+    store = _FilesystemBackend(key_prefixes=['prefix'], runtime_dirs=[run_dir, fb_dir])
+    assert store.load_store('key', lambda x: x + 1) == (42, 43)
+
+    assert fallback.load('key') == 43, 'contect in fallback symlink did not change'
 
 
 def test_fs_backend_load_store_is_atomic(tmpdir):
